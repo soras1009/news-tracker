@@ -11,7 +11,12 @@ import time
 st.set_page_config(page_title="삼천리 보도자료 게재 현황", layout="wide")
 
 # 구글 시트 연결
-conn = st.connection("gsheets", type=GSheetsConnection)
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+except Exception as e:
+    st.error(f"구글 시트 연결 초기화 오류: {e}")
+    conn = None
+
 SHEET_NAME = "2026년"
 
 st.title("📰 보도자료 게재 현황 추적 시스템")
@@ -279,9 +284,12 @@ st.subheader("📊 2026년 보도자료 게재 현황")
 
 try:
     # 구글 시트에서 데이터 읽기
-    df = conn.read(worksheet=SHEET_NAME)
+    if conn is None:
+        st.error("구글 시트 연결이 초기화되지 않았습니다. Secrets 설정을 확인해주세요.")
+    else:
+        df = conn.read(worksheet=SHEET_NAME)
     
-    if not df.empty and len(df.columns) >= 2:
+        if not df.empty and len(df.columns) >= 2:
         # 데이터 표시
         st.dataframe(
             df,
@@ -356,8 +364,16 @@ try:
         st.info("📝 아직 등록된 데이터가 없습니다. 왼쪽 사이드바에서 첫 보도자료를 등록해보세요!")
 
 except Exception as e:
-    st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+    st.error(f"데이터를 불러오는 중 오류가 발생했습니다.")
+    st.error(f"상세 오류: {str(e)}")
     st.info("구글 시트 권한을 확인해주세요.")
+    
+    # 디버깅 정보
+    with st.expander("🔍 디버깅 정보"):
+        st.write(f"오류 타입: {type(e).__name__}")
+        st.write(f"오류 내용: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
 
 # 사용 안내
 with st.expander("ℹ️ 사용 방법"):
