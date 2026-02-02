@@ -290,78 +290,78 @@ try:
         df = conn.read(worksheet=SHEET_NAME)
     
         if not df.empty and len(df.columns) >= 2:
-        # 데이터 표시
-        st.dataframe(
-            df,
-            use_container_width=True,
-            height=600,
-            hide_index=True
-        )
+            # 데이터 표시
+            st.dataframe(
+                df,
+                use_container_width=True,
+                height=600,
+                hide_index=True
+            )
         
-        # 통계 정보
-        date_columns = [col for col in df.columns if col not in ["구분", "매체명"]]
-        if date_columns:
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric("총 보도자료 수", len(date_columns))
-            
-            with col2:
-                total_media = len(df[df["매체명"].notna() & (df["매체명"] != "")])
-                st.metric("등록된 매체 수", total_media)
-            
-            with col3:
-                # 총 게재 건수 (O의 개수)
-                total_coverage = 0
-                for col in date_columns:
-                    if col in df.columns:
-                        total_coverage += (df[col] == "O").sum()
-                st.metric("총 게재 건수", total_coverage)
-        
-        # 매체별 게재율
-        st.divider()
-        st.subheader("📈 매체별 게재 성과")
-        
-        if date_columns:
-            # 매체별 게재 횟수 계산
-            media_stats = []
-            for idx, row in df.iterrows():
-                if row["매체명"] and row["구분"] != "제목":
-                    media_name = row["매체명"]
-                    coverage_count = sum([1 for col in date_columns if col in row and row[col] == "O"])
-                    coverage_rate = (coverage_count / len(date_columns) * 100) if len(date_columns) > 0 else 0
-                    media_stats.append({
-                        "매체명": media_name,
-                        "게재 건수": coverage_count,
-                        "게재율": f"{coverage_rate:.1f}%"
-                    })
-            
-            if media_stats:
-                stats_df = pd.DataFrame(media_stats)
-                stats_df = stats_df.sort_values("게재 건수", ascending=False).reset_index(drop=True)
+            # 통계 정보
+            date_columns = [col for col in df.columns if col not in ["구분", "매체명"]]
+            if date_columns:
+                col1, col2, col3 = st.columns(3)
                 
-                col1, col2 = st.columns([2, 3])
                 with col1:
-                    st.dataframe(stats_df, hide_index=True, height=400)
+                    st.metric("총 보도자료 수", len(date_columns))
                 
                 with col2:
-                    # 상위 10개 매체 차트
-                    if len(stats_df) > 0:
-                        import plotly.express as px
-                        top_10 = stats_df.head(10)
-                        fig = px.bar(
-                            top_10,
-                            x="게재 건수",
-                            y="매체명",
-                            orientation='h',
-                            title="상위 10개 매체 게재 현황",
-                            color="게재 건수",
-                            color_continuous_scale="Blues"
-                        )
-                        fig.update_layout(height=400)
-                        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("📝 아직 등록된 데이터가 없습니다. 왼쪽 사이드바에서 첫 보도자료를 등록해보세요!")
+                    total_media = len(df[df["매체명"].notna() & (df["매체명"] != "")])
+                    st.metric("등록된 매체 수", total_media)
+                
+                with col3:
+                    # 총 게재 건수 (O의 개수)
+                    total_coverage = 0
+                    for col in date_columns:
+                        if col in df.columns:
+                            total_coverage += (df[col] == "O").sum()
+                    st.metric("총 게재 건수", total_coverage)
+            
+            # 매체별 게재율
+            st.divider()
+            st.subheader("📈 매체별 게재 성과")
+            
+            if date_columns:
+                # 매체별 게재 횟수 계산
+                media_stats = []
+                for idx, row in df.iterrows():
+                    if row["매체명"] and row["구분"] != "제목":
+                        media_name = row["매체명"]
+                        coverage_count = sum([1 for col in date_columns if col in row and row[col] == "O"])
+                        coverage_rate = (coverage_count / len(date_columns) * 100) if len(date_columns) > 0 else 0
+                        media_stats.append({
+                            "매체명": media_name,
+                            "게재 건수": coverage_count,
+                            "게재율": f"{coverage_rate:.1f}%"
+                        })
+                
+                if media_stats:
+                    stats_df = pd.DataFrame(media_stats)
+                    stats_df = stats_df.sort_values("게재 건수", ascending=False).reset_index(drop=True)
+                    
+                    col1, col2 = st.columns([2, 3])
+                    with col1:
+                        st.dataframe(stats_df, hide_index=True, height=400)
+                    
+                    with col2:
+                        # 상위 10개 매체 차트
+                        if len(stats_df) > 0:
+                            import plotly.express as px
+                            top_10 = stats_df.head(10)
+                            fig = px.bar(
+                                top_10,
+                                x="게재 건수",
+                                y="매체명",
+                                orientation='h',
+                                title="상위 10개 매체 게재 현황",
+                                color="게재 건수",
+                                color_continuous_scale="Blues"
+                            )
+                            fig.update_layout(height=400)
+                            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("📝 아직 등록된 데이터가 없습니다. 왼쪽 사이드바에서 첫 보도자료를 등록해보세요!")
 
 except Exception as e:
     st.error(f"데이터를 불러오는 중 오류가 발생했습니다.")
