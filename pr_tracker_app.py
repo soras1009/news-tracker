@@ -21,6 +21,60 @@ SHEET_NAME = "2026년"
 
 st.title("📰 보도자료 게재 현황 추적 시스템")
 
+# 매체 순서 정의 (사용자 지정 순서)
+MEDIA_ORDER = [
+    "가스신문", "에너지경제", "에너지플랫폼뉴스", "에너지데일리", "에너지신문",
+    "이투뉴스", "투데이에너지", "에너지코리아", "핀포인트뉴스", "에너지fn",
+    "포인트데일리", "산업인뉴스", "전기신문", "전자신문", "신소재경제신문",
+    "경인일보", "경기일보", "인천일보", "기호일보", "인사이트인천",
+    "전국매일신문", "포에버뉴스", "매경이코노미", "조선비즈", "서울경제",
+    "헤럴드경제", "머니투데이", "더벨", "딜사이트", "블로터",
+    "이데일리", "아시아투데이", "스포츠조선", "더스쿠프", "일요신문",
+    "비즈한국", "일요시사", "이지경제", "일요서울", "일요경제",
+    "일요주간", "스카이데일리", "주간한국", "데일리한국", "미래경제",
+    "마이데일리", "이뉴스투데이", "뉴스투데이", "뉴스포스트", "비즈워치",
+    "뉴스로드", "프레스맨", "더리브스", "파이낸셜투데이", "인사이트코리아",
+    "비즈니스포스트", "글로벌이코노믹", "위키리크스한국", "조세일보", "세정일보",
+    "조세금융신문", "조세플러스", "시사포커스", "시사프라임", "SR타임스",
+    "투데이신문", "민주신문", "애플경제", "이프레시뉴스", "한국금융경제신문",
+    "NBN뉴스", "NBN NEWS", "W", "시사캐스트", "CEO&",
+    "오케이뉴스", "한스경제", "뉴스트리", "이코리아", "글로벌경제",
+    "글로벌에픽", "뉴스드림", "오늘경제", "CNB저널", "CNB저널(문화경제)",
+    "녹색경제신문", "조선일보", "동아일보", "중앙일보", "연합뉴스",
+    "한국일보", "서울신문", "문화일보", "내일신문", "뉴시스",
+    "뉴스1", "MBN", "매일경제", "한국경제", "파이낸셜뉴스",
+    "아시아경제", "아주경제", "이투데이", "딜사이트경제TV", "CEO스코어",
+    "데일리", "EBN", "비즈트리뷴", "굿모닝경제", "뉴스프리존",
+    "하이뉴스", "에너지타임즈", "인천신문", "인천in", "이코노믹리뷰",
+    "주간현대", "TV조선", "연합뉴스TV", "MTN", "경향신문",
+    "국민일보", "한겨레", "세계일보", "청년일보", "마니아타임즈",
+    "브릿지경제", "프라임경제", "캐치뉴스", "Catch News", "CATCH NEWS",
+    "뉴스픽", "인더스트리뉴스", "오토타임즈", "플래텀", "데일리머니",
+    "벤처스퀘어", "스포츠춘추", "스포츠투데이", "스포츠월드", "팍스경제TV",
+    "브레이크뉴스", "더페어", "데일리안", "미디어펜", "파이트타임즈",
+    "스타IN", "일간스포츠", "서울뉴스통신", "디지털타임즈", "교통뉴스",
+    "이코노뉴스", "국회뉴스", "전파신문", "뉴스타운", "비즈워크",
+    "뉴스저널", "리즘", "스마트투데이", "뉴스핌", "이코노믹데일리",
+    "서울타임즈", "뉴스인", "더스트리뉴스", "서울파이낸스", "스포탈코리아"
+]
+
+def sort_media_by_order(media_list):
+    """사용자 지정 순서대로 매체 정렬"""
+    sorted_media = []
+    remaining_media = []
+    
+    # 순서에 있는 매체 먼저
+    for media in MEDIA_ORDER:
+        if media in media_list:
+            sorted_media.append(media)
+    
+    # 순서에 없는 매체는 뒤에 (알파벳순)
+    for media in sorted(media_list):
+        if media not in MEDIA_ORDER:
+            remaining_media.append(media)
+    
+    return sorted_media + remaining_media
+
 # 네이버 뉴스 자동 검색 함수
 def search_naver_news(title):
     """제목으로 네이버 뉴스를 자동 검색하여 매체명 추출"""
@@ -241,7 +295,10 @@ if submit:
                         title_row_idx = 0
                     
                     # 각 매체에 대해 O 표시
-                    for media in found_media:
+                    # 먼저 순서대로 정렬
+                    sorted_media = sort_media_by_order(found_media)
+                    
+                    for media in sorted_media:
                         # 매체가 시트에 없으면 추가
                         media_exists = False
                         if "매체명" in df.columns:
@@ -253,14 +310,28 @@ if submit:
                                 media_exists = True
                         
                         if not media_exists:
-                            # 새 매체 추가
+                            # 새 매체 추가 - 올바른 위치에 삽입
+                            # 기존 매체 목록 가져오기
+                            existing_media = df[df["구분"] != "제목"]["매체명"].tolist()
+                            existing_media.append(media)
+                            
+                            # 전체를 다시 정렬
+                            all_sorted = sort_media_by_order(existing_media)
+                            insert_position = all_sorted.index(media)
+                            
+                            # 제목 행 제외하고 계산 (제목 행이 0번째이므로 +1)
+                            actual_position = insert_position + 1
+                            
+                            # 새 행 데이터 생성
                             new_data = {"구분": "", "매체명": media}
                             for col in df.columns:
                                 if col not in ["구분", "매체명"]:
                                     new_data[col] = ""
                             new_data[date_str] = "O"
                             new_row = pd.DataFrame([new_data])
-                            df = pd.concat([df, new_row], ignore_index=True)
+                            
+                            # 올바른 위치에 삽입
+                            df = pd.concat([df.iloc[:actual_position], new_row, df.iloc[actual_position:]]).reset_index(drop=True)
                     
                     # 구글 시트에 업데이트
                     conn.update(worksheet=SHEET_NAME, data=df)
